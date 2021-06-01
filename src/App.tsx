@@ -1,4 +1,5 @@
 import React from 'react';
+import axios from 'axios';
 import { 
   Container, 
   FormControl, 
@@ -41,23 +42,42 @@ const useStyles = makeStyles((theme: Theme) =>
     table: {
       minWidth: 650,
     },
+    currencyIcon: {
+      width: 18,
+      height: 18,
+      borderRadius: 30,
+    }
   }),
 );
 
-function createData(name: string, calories: number, fat: number, carbs: number, protein: number) {
-  return { name, calories, fat, carbs, protein };
+type TCoin = {
+  name: string;
+  fullName: string;
+  imageUrl: string;
+  price: number;
+  volume24Hour: number;
 }
-
-const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-];
 
 function App() {
   const classes = useStyles();
+  const [allCoins, setAllCoins] = React.useState<TCoin[]>([]);
+
+  React.useEffect(() => {
+    axios.get('https://min-api.cryptocompare.com/data/top/totalvolfull?limit=10&tsym=USD')
+    .then(({ data }) => {
+      const coins: TCoin[] = data.Data.map((coin: any) => {
+        const obj: TCoin = {
+          name: coin.CoinInfo.Name,
+          fullName: coin.CoinInfo.FullName,
+          imageUrl: `https://www.cryptocompare.com/${coin.CoinInfo.ImageUrl}`,
+          price: coin.RAW.USD.PRICE.toFixed(3),
+          volume24Hour: parseInt(coin.RAW.USD.VOLUME24HOUR),
+        }
+        return obj
+      })
+      setAllCoins(coins)
+    })
+  },[classes])
 
   return (
     <Container className={classes.root} maxWidth="lg">
@@ -68,23 +88,21 @@ function App() {
       <Table className={classes.table} aria-label="simple table">
         <TableHead>
           <TableRow>
-            <TableCell>Dessert (100g serving)</TableCell>
-            <TableCell align="right">Calories</TableCell>
-            <TableCell align="right">Fat&nbsp;(g)</TableCell>
-            <TableCell align="right">Carbs&nbsp;(g)</TableCell>
-            <TableCell align="right">Protein&nbsp;(g)</TableCell>
+            <TableCell></TableCell>
+            <TableCell align="left">Name</TableCell>
+            <TableCell align="left">FullName</TableCell>
+            <TableCell align="left">Price</TableCell>
+            <TableCell align="left">volume24hour</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.name}>
-              <TableCell component="th" scope="row">
-                {row.name}
-              </TableCell>
-              <TableCell align="right">{row.calories}</TableCell>
-              <TableCell align="right">{row.fat}</TableCell>
-              <TableCell align="right">{row.carbs}</TableCell>
-              <TableCell align="right">{row.protein}</TableCell>
+          {allCoins.map((coin) => (
+            <TableRow key={coin.name}>
+              <TableCell><img className={classes.currencyIcon} src={coin.imageUrl} alt="coin icon" /></TableCell>
+              <TableCell align="left">{coin.name}</TableCell>
+              <TableCell align="left">{coin.fullName}</TableCell>
+              <TableCell align="left">${coin.price}</TableCell>
+              <TableCell align="left">${coin.volume24Hour}</TableCell>
             </TableRow>
           ))}
         </TableBody>
